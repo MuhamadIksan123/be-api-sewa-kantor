@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('office_spaces', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('thumbnail');
             $table->string('address');
             $table->string('slug');
             $table->boolean('is_open');

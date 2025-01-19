@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('booking_trx_id');
             $table->string('slug');
-            $table->boolean('is_padi');
+            $table->string('phone_number');
+            $table->boolean('is_paid');
             $table->date('started_at');
             $table->unsignedInteger('total_mount');
             $table->unsignedInteger('duration');
