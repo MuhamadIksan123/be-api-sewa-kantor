@@ -20,10 +20,10 @@ class ViewBookingResource extends JsonResource
             'phone_number' => $this->phone_number,
             'booking_trx_id' => $this->booking_trx_id,
             'is_paid' => $this->duration,
-            'total_amount' => $this->amount,
+            'total_amount' => $this->total_amount,
             'started_at' => $this->started_at,
             'ended_at' => $this->ended_at,
-            'officeSpace' => new OfficeSpaceResource($this->whenLoaded('officeSpace'))
+            'office' => new OfficeSpaceResource($this->whenLoaded('officeSpace'))
         ];
     }
 }
