@@ -10,6 +10,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
@@ -17,6 +18,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Twilio\Rest\Client;
 
 class BookingTransactionResource extends Resource
 {
@@ -99,6 +101,53 @@ class BookingTransactionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('approve')
+                    ->label('Approve')
+                    ->action(function (BookingTransaction $record) {
+                        $record->is_paid = true; // Perbaikan typo dari is_padi ke is_paid
+                        $record->save();
+
+                        // Trigger Custom Notifications
+                        Notification::make()
+                            ->title("Booking Approved")
+                            ->success()
+                            ->body("The booking has been successfully approved.")
+                            ->send();
+
+                        // Account Twilio
+                        $sid = getenv("TWILIO_ACCOUNT_SID");
+                        $token = getenv("TWILIO_AUTH_TOKEN");
+                        $twilio = new Client($sid, $token);
+
+                        // Message
+                        $messageBody = "Hi ({$record->name}), pemesanan Anda dengan kode ({$record->booking_trx_id}) sudah terbayar penuh.\n\n";
+                        $messageBody .= "Silakan datang ke lokasi kantor ({$record->officeSpace->name}) untuk mulai menggunakan ruangan kerja tersebut.\n\n";
+                        $messageBody .= "Jika Anda memiliki pertanyaan, silakan menghubungi CS kami di MuhamadIksan.com/contact-us.";
+
+                        // Kirim SMS dengan Twilio
+                        // $message = $twilio->messages->create(
+                        //     "+{$record->phone_number}",
+                        //     [
+                        //         "body" => $messageBody,
+                        //         "from" => getenv("TWILIO_PHONE_NUMBER"),
+                        //     ]
+                        // );
+
+                        // Kirim pesan WhatsApp menggunakan Twilio
+                        $message = $twilio->messages->create(
+                            "whatsapp:+{$record->phone_number}", // Nomor tujuan
+                            [
+                                "from" => "whatsapp:+14155238886", // Nomor WhatsApp resmi Twilio
+                                "body" => $messageBody,
+                            ]
+                        );
+                    })
+                    ->color('success')
+                    ->modalHeading('Konfirmasi Persetujuan')
+                    ->modalDescription('Apakah Anda yakin ingin menyetujui transaksi ini?')
+                    ->modalSubmitActionLabel('Ya, Setujui')
+                    ->modalCancelActionLabel('Batal')
+                    ->visible(fn(BookingTransaction $record) => !$record->is_paid)
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

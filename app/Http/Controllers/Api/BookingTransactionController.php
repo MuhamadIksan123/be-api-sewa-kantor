@@ -10,6 +10,7 @@ use App\Models\BookingTransaction;
 use App\Models\OfficeSpace;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Twilio\Rest\Client;
 
 class BookingTransactionController extends Controller
 {
@@ -32,6 +33,32 @@ class BookingTransactionController extends Controller
         $bookingTransaction = BookingTransaction::create($validatedData);
 
         // Mengirimkan notifikasi (logika untuk mengirimkan notifikasi perlu ditambahkan di sini)
+        $sid = getenv("TWILIO_ACCOUNT_SID");
+        $token = getenv("TWILIO_AUTH_TOKEN");
+        $twilio = new Client($sid, $token);
+
+        // Message
+        $messageBody = "Hi ({$bookingTransaction->name}), Terima kasih telah booking kantor di FirstOffice.\n\n";
+        $messageBody .= "Pesanan kantor ({$bookingTransaction->officeSpace->name}) Anda sedang kami proses dengan Booking TRX ID: {$bookingTransaction->booking_trx_id}.\n\n";
+        $messageBody .= "Kami akan menginformasikan kembali status pemesanan Anda secepat mungkin.";
+
+        // Kirim dengan fitur SMS
+        // $message = $twilio->messages->create(
+        //     "+{$bookingTransaction->phone_number}",
+        //     [
+        //         "body" => $messageBody,
+        //         "from" => getenv("TWILIO_PHONE_NUMBER"),
+        //     ]
+        // );
+
+        // Kirim pesan WhatsApp menggunakan Twilio
+        $message = $twilio->messages->create(
+            "whatsapp:+{$bookingTransaction->phone_number}", // Nomor tujuan
+            [
+                "from" => "whatsapp:+14155238886", // Nomor WhatsApp resmi Twilio
+                "body" => $messageBody,
+            ]
+        );
 
         // Mengembalikan resource
         $bookingTransaction->load('officeSpace');
